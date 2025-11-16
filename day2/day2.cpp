@@ -2,11 +2,12 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <limits>
 
 class Student
 {
 public:
-    bool operator<(Student std)
+    bool operator<(const Student &std) const
     {
         return id_ < std.getid();
     }
@@ -50,7 +51,22 @@ public:
             std::cout << "5. 退出\n";
             std::cout << "请选择：";
             int choice;
-            std::cin >> choice;
+            while(true)
+            {
+                std::cin >> choice;
+                if(std::cin.fail())
+                {
+                    std::cin.clear();
+                    std::cin.ignore(1024, '\n');
+                    std::cout << "请输入合法数字！" << std::endl;
+                    continue;
+                }
+                if(choice >= 1 && choice <= 5)
+                {
+                    break;
+                }
+                std::cout << "请输入合法选项！" << std::endl;
+            }
             switch (choice)
             {
             case 1:
@@ -61,26 +77,48 @@ public:
                 break;
             case 3:
             {
-                int id = -1;
-                std::cout << "请输入学生id：";
-                std::cin >> id;
-                const Student std = idTogetStudent(id);
-                if (std.getid() == -1)
+                int id;
+                while (true)
+                {
+                    std::cout << "请输入学号：";
+                    std::cin >> id;
+                    if (std::cin.fail() || id < 0)
+                    {
+                        std::cin.clear();
+                        std::cin.ignore(1024, '\n');
+                        std::cout << "输入非法，请输入数字！" << std::endl;
+                        continue;
+                    }
+                    break;
+                }
+                Student *std = idTogetStudent(id);
+                if (!std)
                 {
                     std::cout << "不存在此学生" << std::endl;
                 }
                 else
                 {
-                    std.print();
+                    std->print();
                 }
             }
             break;
             case 4:
             {
-                int id = -1;
-                std::cout << "请输入学生id：";
-                std::cin >> id;
-                bool ret = removeStudnet(id);
+                int id;
+                while (true)
+                {
+                    std::cout << "请输入学号：";
+                    std::cin >> id;
+                    if (std::cin.fail())
+                    {
+                        std::cin.clear();
+                        std::cin.ignore(1024, '\n');
+                        std::cout << "输入非法，请输入数字！" << std::endl;
+                        continue;
+                    }
+                    break;
+                }
+                bool ret = removeStudent(id);
                 if (ret)
                 {
                     std::cout << "删除成功" << std::endl;
@@ -100,9 +138,20 @@ public:
     bool AddStudent()
     {
         std::string name;
-        int age, id;
-        std::cout << "请输入学号：";
-        std::cin >> id;
+        int id;
+        while (true)
+        {
+            std::cout << "请输入学号：";
+            std::cin >> id;
+            if (std::cin.fail())
+            {
+                std::cin.clear();
+                std::cin.ignore(1024, '\n');
+                std::cout << "输入非法，请输入数字！" << std::endl;
+                continue;
+            }
+            break;
+        }
         for (const auto &student : std_)
         {
             if (id == student.getid())
@@ -112,36 +161,49 @@ public:
             }
         }
         std::cout << "请输入姓名：";
-        std::cin >> name;
-        std::cout << "请输入年龄：";
-        std::cin >> age;
+        // std::numeric_limits<std::streamsize>::max() 返回 streamsize 类型的最大值，用于 ignore 丢弃缓冲区中所有剩余字符
+        //从输入缓冲区中丢弃剩余的所有字符,丢弃到 遇到换行符 \n 为止，保证下一次输入不会被残留字符污染
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        std::getline(std::cin, name);
+        int age;
+        while (true)
+        {
+            std::cout << "请输入年龄：";
+            std::cin >> age;
+            if (std::cin.fail() || age < 0 || age > 150)
+            {
+                std::cin.clear();
+                std::cin.ignore(1024, '\n');
+                std::cout << "输入非法，请输入 0~150 的整数！" << std::endl;
+                continue;
+            }
+            break;
+        }
         std_.emplace_back(Student(id, name, age));
         return true;
     }
     // 打印学生
     void Print()
     {
-        std::sort(std_.begin(), std_.end());
-        for (const auto &std : std_)
-        {
-            std.print();
-        }
+        auto vec = std_;
+        std::sort(vec.begin(), vec.end());
+        for (const auto &s : vec)
+            s.print();
     }
     // id查找
-    const Student idTogetStudent(int id)
+    Student *idTogetStudent(int id)
     {
-        for (const auto &student : std_)
+        for (auto &student : std_)
         {
             if (id == student.getid())
             {
-                return student;
+                return &student;
             }
         }
-        std::cout << "不存在该学生！" << std::endl;
-        return Student();
+        return nullptr;
     }
     // id删除
-    bool removeStudnet(int id)
+    bool removeStudent(int id)
     {
         for (std::vector<Student>::iterator it = std_.begin(); it != std_.end(); it++)
         {
